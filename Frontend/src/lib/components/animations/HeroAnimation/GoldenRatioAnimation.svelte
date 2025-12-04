@@ -29,8 +29,8 @@
 >
     <svg {height} {width} class="w-full h-full">
         <g
-            transform=" translate({width / 1.37}, {height /
-                3.5}) scale({scale}) rotate(-90)"
+            transform=" translate({width / 1.5}, {height /
+                1.5}) scale({scale}) scale(-1,1) rotate(90)"
         >
             {#if ready}
                 <path
@@ -51,16 +51,4 @@
             {/if}
         </g>
     </svg>
-
-    {#if animationFinished}
-        <div
-            class="z-10 text-center"
-            in:fly={{ y: 50, duration: 1000, easing: cubicOut }}
-        >
-            <h1 class="text-6xl font-bold text-white mb-4">Vishwa</h1>
-            <p class="text-xl text-gray-400">
-                Frontend Developer & Data Science Enthusiast
-            </p>
-        </div>
-    {/if}
 </div>

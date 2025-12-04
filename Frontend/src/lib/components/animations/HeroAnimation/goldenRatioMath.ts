@@ -36,13 +36,19 @@ export const getDirection = (index: number): Direction => {
     return index % 4; // This handles the 0, 1, 2, 3 cycle automatically
 };
 
-export const generateSpiralPath = (radii: number[]): string => {
+export const generateSpiralPath = (radii: number[]) => {
     // Start at the center (0,0)
-    let path = `M 0 0`;
+    // let path = `M 0 0`;
 
     // For tracking current pen position 
     let currentX = 0;
     let currentY = 0;
+
+    // We store the segments so we can play them back in reverse
+    const segments: { startX: number; startY: number; endX: number; endY: number; r: number }[] = [];
+
+    // Bounds tracking for Responsiveness
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
 
     radii.forEach((r, index) => {
         const dir = getDirection(index);
@@ -52,9 +58,6 @@ export const generateSpiralPath = (radii: number[]): string => {
         // Calculate where the arc should END based on direction
         switch (dir) {
             case Direction.Right:
-                // Moving Right: X increases by radius, Y decreases (goes up) by radius
-                // Wait... SVG Coordinates are weird.
-                // Let's visualize: We are at bottom-left of the square, arc goes to top-right.
                 endX = currentX + r;
                 endY = currentY - r;
                 break;
@@ -72,15 +75,45 @@ export const generateSpiralPath = (radii: number[]): string => {
                 break;
         }
 
+        // Update Bounds
+        minX = Math.min(minX, currentX, endX);
+        maxX = Math.max(maxX, currentX, endX);
+        minY = Math.min(minY, currentY, endY);
+        maxY = Math.max(maxY, currentY, endY);
+
+        // Save segment
+        segments.push({ startX: currentX, startY: currentY, endX, endY, r });
+
         // Append the Arc command
         // A rx ry rotation large-arc-flag sweep-flag x y
         // sweep-flag = 0 means "counter-clockwise" (or inverted coordinates logic)
         // For this specific spiral growth, we usually use sweep=0.
-        path += ` A ${r} ${r} 0 0 1 ${endX} ${endY}`;
+        // path += ` A ${r} ${r} 0 0 1 ${endX} ${endY}`;
 
         // Update Our current path for the next loop 
         currentX = endX;
         currentY = endY;
-    })
-    return path;
+    });
+
+    // 2. Generate Reversed Path String (Backwards Pass)
+    // Start at the very end of the spiral
+    const lastPoint = segments[segments.length - 1];
+    let path = `M ${lastPoint.endX} ${lastPoint.endY}`;
+
+    // Loop backwards through segments
+    for (let i = segments.length - 1; i >= 0; i--) {
+        const s = segments[i];
+        // NOTE: When reversing direction, we FLIP the sweep flag.
+        // Forward was '1' (convex). Backward is '0'.
+        path += ` A ${s.r} ${s.r} 0 0 0 ${s.startX} ${s.startY}`;
+    }
+
+    return {
+        path,
+        // We export the center of the spiral so Svelte can align it
+        centerX: (minX + maxX) / 2,
+        centerY: (minY + maxY) / 2,
+        width: maxX - minX,
+        height: maxY - minY
+    };
 };
